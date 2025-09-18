@@ -1,6 +1,6 @@
 {
   "name": "cjneomatrix",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "NeoPixel matrix helper for micro:bit: width/height, draw arrays, text + scrolling.",
   "license": "MIT",
   "dependencies": {
