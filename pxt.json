@@ -1,16 +1,15 @@
 {
-  "name": "neomatrix",
-  "version": "0.0.1",
-  "description": "NeoPixel matrix helper for micro:bit with width/height, draw arrays, and text/scrolling.",
+  "name": "cjneomatrix",
+  "version": "0.0.3",
+  "description": "NeoPixel matrix helper for micro:bit: width/height, draw arrays, text + scrolling.",
   "license": "MIT",
   "dependencies": {
     "core": "*",
     "neopixel": "*"
   },
-  "files": [
-    "main.ts",
-    "README.md"
-  ],
+  "files": ["main.ts", "README.md"],
   "public": true,
-  "preferredEditor": "tsprj"
+  "preferredEditor": "tsprj",
+  "target": "microbit",
+  "supportedTargets": ["microbit"]
 }
