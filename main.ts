@@ -7,9 +7,9 @@
 //% color="#00BCD4" icon="\uf00a" block="CJ NeoMatrix"
 namespace cjneomatrix {
 
-    // --- fixed matrix config (8×32; x=8, y=32) ---
-    const W = 8
-    const H = 32
+    let W = 8
+    let H = 32
+
 
     let strip: neopixel.Strip = null
     let serpentine = true
@@ -45,7 +45,29 @@ namespace cjneomatrix {
         Diag = 2
     }
 
+    export enum MatrixSize {
+        //% block="8×8"
+        S8x8 = 0,
+        //% block="8×16"
+        S8x16 = 1,
+        //% block="8×32"
+        S8x32 = 2
+    }
+
+
     // ---------- Helpers ----------
+    function applySize(size: MatrixSize): number {
+        // W is fixed at 8 columns; H varies (8,16,32)
+        W = 8
+        if (size === MatrixSize.S8x8) H = 8
+        else if (size === MatrixSize.S8x16) H = 16
+        else H = 32
+        const count = W * H
+        // guard: package spec supports up to 256 pixels
+        if (count > 256) control.fail("CJ NeoMatrix: too many pixels")
+        return count
+    }
+
     function ok(): boolean { return !!strip }
 
     function idx(x: number, y: number): number {
@@ -91,29 +113,44 @@ namespace cjneomatrix {
 
     // ---------- Public: Setup ----------
     /**
-     * Initialize the 8×32 matrix on a pin.
+     * Initialize the matrix on a pin.
+     * @param size matrix size
      * @param pin data pin for NeoPixel
      * @param serp true if rows snake back and forth (zig-zag)
      * @param brightness 0..255
      */
-    //% block="init 8×32 at %pin serpentine %serp brightness %brightness"
-    //% pin.defl=DigitalPin.P0 serp.defl=true brightness.min=0 brightness.max=255
+    //% block="init matrix %size at %pin serpentine %serp brightness %brightness"
+    //% size.defl=MatrixSize.S8x32 pin.defl=DigitalPin.P0 serp.defl=true brightness.min=0 brightness.max=255
     //% group="Setup" weight=100
-    export function init(pin: DigitalPin, serp: boolean = true, brightness: number = 60) {
+    export function init(size: MatrixSize, pin: DigitalPin, serp: boolean = true, brightness: number = 60) {
         serpentine = !!serp
+        const count = applySize(size)
         if (isSim()) {
             ensureStrip()
+            strip.setBrightness(Math.clamp(0, 255, Math.floor(brightness)))
+            strip.clear(); strip.show()
         } else {
-            strip = neopixel.create(pin, W * H, NeoPixelMode.RGB)
+            strip = neopixel.create(pin, count, NeoPixelMode.RGB)
             strip.setBrightness(Math.clamp(0, 255, Math.floor(brightness)))
             strip.clear(); strip.show()
         }
-
-        // serpentine = !!serp
-        // strip = neopixel.create(pin, W * H, NeoPixelMode.RGB)
-        // strip.setBrightness(Math.clamp(0, 255, Math.floor(brightness)))
-        // strip.clear(); strip.show()
     }
+
+    /**
+     * Change the matrix size (8×8, 8×16, 8×32). Call after init if needed.
+     */
+    //% block="set matrix size %size"
+    //% size.defl=MatrixSize.S8x32
+    //% group="Setup" weight=99
+    export function setMatrixSize(size: MatrixSize) {
+        const count = applySize(size)
+        // Re-create real strip only on hardware; in sim, keep the mock
+        if (!isSim() && strip) {
+            // Recreate on the same pin is not directly available; advise re-init if needed.
+            // Users can call init(...) again to bind to a pin with new count.
+        }
+    }
+
 
     /**
      * Set brightness (0..255)
