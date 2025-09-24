@@ -1,7 +1,7 @@
 {
-  "name": "cjneomatrix",
-  "version": "0.0.6",
-  "description": "NeoPixel matrix helper for micro:bit (8×32 / 8×16 / 8×8): draw arrays, 5×8 text with scrolling.",
+  "name": "pxt-cjneomatrix",
+  "version": "0.1.0",
+  "description": "Easy horizontal text (static/scrolling) with gradients and effects on an 8×32 NeoPixel matrix for micro:bit.",
   "license": "MIT",
   "dependencies": {
     "core": "*",
@@ -12,7 +12,8 @@
     "README.md"
   ],
   "public": true,
-  "preferredEditor": "tsprj",
-  "target": "microbit",
-  "supportedTargets": ["microbit"]
+  "supportedTargets": [
+    "microbit"
+  ],
+  "preferredEditor": "tsprj"
 }
