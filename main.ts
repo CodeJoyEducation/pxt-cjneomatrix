@@ -15,6 +15,26 @@ namespace cjneomatrix {
     let serpentine = true
     let effectsRunning = false
 
+    // ---------- Simulator guard ----------
+    function isSim(): boolean {
+        // In MakeCode, simulator uses serial 0; real hardware is non-zero.
+        return control.deviceSerialNumber() === 0
+    }
+    function ensureStrip(): void {
+        if (strip) return
+        if (isSim()) {
+            // Minimal no-op mock so simulator never crashes
+            // @ts-ignore
+            strip = <any>{
+                setBrightness: (_: number) => {},
+                clear: () => {},
+                show: () => {},
+                setPixelColor: (_: number, __: number) => {}
+            }
+        }
+    }
+
+
     // ---------- Enums for dropdowns ----------
     export enum GradientMode {
         //% block="horizontal (along 32)"
@@ -81,9 +101,18 @@ namespace cjneomatrix {
     //% group="Setup" weight=100
     export function init(pin: DigitalPin, serp: boolean = true, brightness: number = 60) {
         serpentine = !!serp
-        strip = neopixel.create(pin, W * H, NeoPixelMode.RGB)
-        strip.setBrightness(Math.clamp(0, 255, Math.floor(brightness)))
-        strip.clear(); strip.show()
+        if (isSim()) {
+            ensureStrip()
+        } else {
+            strip = neopixel.create(pin, W * H, NeoPixelMode.RGB)
+            strip.setBrightness(Math.clamp(0, 255, Math.floor(brightness)))
+            strip.clear(); strip.show()
+        }
+
+        // serpentine = !!serp
+        // strip = neopixel.create(pin, W * H, NeoPixelMode.RGB)
+        // strip.setBrightness(Math.clamp(0, 255, Math.floor(brightness)))
+        // strip.clear(); strip.show()
     }
 
     /**
@@ -93,6 +122,7 @@ namespace cjneomatrix {
     //% value.min=0 value.max=255
     //% group="Setup" weight=99
     export function setBrightness(value: number) {
+        ensureStrip()
         if (!ok()) return
         strip.setBrightness(Math.clamp(0, 255, Math.floor(value)))
         strip.show()
@@ -103,7 +133,12 @@ namespace cjneomatrix {
      */
     //% block="clear"
     //% group="Setup" weight=98
-    export function clear() { if (ok()) { strip.clear(); strip.show() } }
+    export function clear() {
+        ensureStrip()
+        if (!ok()) return
+        strip.clear(); strip.show()
+    }
+
 
     /**
      * Make an RGB color
@@ -169,6 +204,7 @@ namespace cjneomatrix {
     //% color.shadow="colorNumberPicker"
     //% group="Text (Static)" weight=90
     export function showText(text: string, color: number) {
+        ensureStrip()
         if (!ok()) return
         drawCentered(text || "", (_x,_y,_i)=>color)
     }
@@ -180,6 +216,7 @@ namespace cjneomatrix {
     //% block="show text %text with colors %colors"
     //% group="Text (Static)" weight=89
     export function showTextColors(text: string, colors: number[]) {
+        ensureStrip()
         if (!ok()) return
         const arr = colors || []
         drawCentered(text || "", (_x,_y,i)=> (i < arr.length ? arr[i] : (arr.length ? arr[arr.length-1] : rgb(255,255,255))))
@@ -193,6 +230,7 @@ namespace cjneomatrix {
     //% mode.defl=GradientMode.Horizontal
     //% group="Text (Static)" weight=88
     export function showTextGradient(text: string, c1: number, c2: number, mode: GradientMode = GradientMode.Horizontal) {
+        ensureStrip()
         if (!ok()) return
         drawCentered(text || "", (x,y,_i)=> gradientAt(x,y,c1,c2,mode))
     }
@@ -263,6 +301,7 @@ namespace cjneomatrix {
     //% color.shadow="colorNumberPicker" msPerCol.defl=40
     //% group="Scrolling" weight=70
     export function scrollOnce(text: string, color: number, msPerCol: number = 40) {
+        ensureStrip()
         if (!ok()) return
         scrollSolid(text || "", [], color, Math.max(1, Math.floor(msPerCol)))
     }
@@ -274,6 +313,7 @@ namespace cjneomatrix {
     //% msPerCol.defl=40
     //% group="Scrolling" weight=69
     export function scrollOnceColors(text: string, colors: number[], msPerCol: number = 40) {
+        ensureStrip()
         if (!ok()) return
         scrollSolid(text || "", colors || [], rgb(255,255,255), Math.max(1, Math.floor(msPerCol)))
     }
@@ -286,6 +326,7 @@ namespace cjneomatrix {
     //% mode.defl=GradientMode.Horizontal msPerCol.defl=40
     //% group="Scrolling" weight=68
     export function scrollOnceGradient(text: string, c1: number, c2: number, mode: GradientMode = GradientMode.Horizontal, msPerCol: number = 40) {
+        ensureStrip()
         if (!ok()) return
         scrollGradient(text || "", c1, c2, mode, Math.max(1, Math.floor(msPerCol)))
     }
@@ -297,6 +338,7 @@ namespace cjneomatrix {
     //% color.shadow="colorNumberPicker" msPerCol.defl=40 gapMs.defl=0 loops.defl=-1
     //% group="Scrolling" weight=67
     export function scrollLoop(text: string, color: number, msPerCol: number = 40, gapMs: number = 0, loops: number = -1) {
+        ensureStrip()
         if (!ok()) return
         effectsRunning = true
         let k = 0
@@ -317,6 +359,7 @@ namespace cjneomatrix {
     //% msPerCol.defl=40 gapMs.defl=0 loops.defl=-1
     //% group="Scrolling" weight=66
     export function scrollLoopColors(text: string, colors: number[], msPerCol: number = 40, gapMs: number = 0, loops: number = -1) {
+        ensureStrip()
         if (!ok()) return
         effectsRunning = true
         let k = 0
@@ -338,6 +381,7 @@ namespace cjneomatrix {
     //% mode.defl=GradientMode.Horizontal msPerCol.defl=40 gapMs.defl=0 loops.defl=-1
     //% group="Scrolling" weight=65
     export function scrollLoopGradient(text: string, c1: number, c2: number, mode: GradientMode = GradientMode.Horizontal, msPerCol: number = 40, gapMs: number = 0, loops: number = -1) {
+        ensureStrip()
         if (!ok()) return
         effectsRunning = true
         let k = 0
@@ -367,6 +411,7 @@ namespace cjneomatrix {
     //% mode.defl=GradientMode.Horizontal
     //% group="Panel" weight=50
     export function fillGradient(c1: number, c2: number, mode: GradientMode = GradientMode.Horizontal) {
+        ensureStrip()
         if (!ok()) return
         for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
@@ -384,6 +429,7 @@ namespace cjneomatrix {
         effectsRunning = true
         const x0 = Math.idiv(W - CHAR_H, 2)
 
+        const endOffset = isSim() ? -Math.min(cols.length, 40) : -cols.length
         for (let offset = H; offset > -cols.length && effectsRunning; offset--) {
             strip.clear()
             for (let sy = 0; sy < H; sy++) {
@@ -410,6 +456,7 @@ namespace cjneomatrix {
         effectsRunning = true
         const x0 = Math.idiv(W - CHAR_H, 2)
 
+        const endOffset = isSim() ? -Math.min(cols.length, 40) : -cols.length
         for (let offset = H; offset > -cols.length && effectsRunning; offset--) {
             strip.clear()
             for (let sy = 0; sy < H; sy++) {
