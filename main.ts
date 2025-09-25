@@ -120,7 +120,7 @@ namespace cjneomatrix {
      * @param brightness 0..255
      */
     //% block="init matrix %size at %pin serpentine %serp brightness %brightness"
-    //% size.defl=cjneomatrix.MatrixSize.S8x32 pin.defl=DigitalPin.P0 serp.defl=true brightness.min=0 brightness.max=255
+    //% size.defl=cjneomatrix.MatrixSize.S8x32 pin.defl=DigitalPin.P0 serp.defl=true brightness.min=0 brightness.max=255 brightness.defl=60
     //% group="Setup" weight=100
     export function init(size: MatrixSize, pin: DigitalPin, serp: boolean = true, brightness: number = 60) {
         serpentine = !!serp
