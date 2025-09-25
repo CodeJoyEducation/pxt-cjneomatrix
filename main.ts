@@ -120,7 +120,7 @@ namespace cjneomatrix {
      * @param brightness 0..255
      */
     //% block="init matrix %size at %pin serpentine %serp brightness %brightness"
-    //% size.defl=MatrixSize.S8x32 pin.defl=DigitalPin.P0 serp.defl=true brightness.min=0 brightness.max=255
+    //% size.defl=cjneomatrix.MatrixSize.S8x32 pin.defl=DigitalPin.P0 serp.defl=true brightness.min=0 brightness.max=255
     //% group="Setup" weight=100
     export function init(size: MatrixSize, pin: DigitalPin, serp: boolean = true, brightness: number = 60) {
         serpentine = !!serp
@@ -140,7 +140,7 @@ namespace cjneomatrix {
      * Change the matrix size (8×8, 8×16, 8×32). Call after init if needed.
      */
     //% block="set matrix size %size"
-    //% size.defl=MatrixSize.S8x32
+    //% size.defl=cjneomatrix.MatrixSize.S8x32
     //% group="Setup" weight=99
     export function setMatrixSize(size: MatrixSize) {
         const count = applySize(size)
@@ -631,5 +631,134 @@ namespace cjneomatrix {
     })()
 
     function glyph(ch: string): number[] { return FONT[ch] || FONT[" "] }
+
+    // ---------- Pixel APIs ----------
+
+    /**
+     * Set one pixel at matrix (x,y).
+     * x: 0..W-1 (vertical axis), y: 0..H-1 (horizontal/long axis)
+     */
+    //% block="set pixel x %x y %y to %color || show %autoShow"
+    //% color.shadow="colorNumberPicker" autoShow.defl=true
+    //% group="Pixels" weight=48
+    export function setPixel(x: number, y: number, color: number, autoShow: boolean = true) {
+        ensureStrip()
+        if (x < 0 || y < 0 || x >= W || y >= H) return
+        const j = idx(x, y)
+        if (j >= 0) {
+            strip.setPixelColor(j, color)
+            if (autoShow) strip.show()
+        }
+    }
+
+    /**
+     * Draw a whole frame from a flat color array of length W*H.
+     * Indexing is matrix order: index = y*W + x (ignores serpentine; we map for you).
+     */
+    //% block="draw color array %buffer || show %autoShow"
+    //% autoShow.defl=true
+    //% group="Pixels" weight=47
+    export function drawColorArray(buffer: number[], autoShow: boolean = true) {
+        ensureStrip()
+        if (!buffer) return
+        const n = Math.min(buffer.length, W * H)
+        for (let i = 0; i < n; i++) {
+            const y = Math.idiv(i, W)
+            const x = i - y * W
+            const j = idx(x, y)
+            if (j >= 0) strip.setPixelColor(j, buffer[i] | 0)
+        }
+        if (autoShow) strip.show()
+    }
+
+    /**
+     * Draw a scene from rows (H arrays, each length W). Out-of-range rows/cols are ignored.
+     * Use rgb(...) for each entry; 0 turns the pixel off.
+     */
+    //% block="draw rows %rows || show %autoShow"
+    //% autoShow.defl=true
+    //% group="Pixels" weight=46
+    export function drawRows(rows: number[][], autoShow: boolean = true) {
+        ensureStrip()
+        if (!rows) return
+        const hh = Math.min(rows.length, H)
+        for (let y = 0; y < hh; y++) {
+            const row = rows[y]
+            if (!row) continue
+            const ww = Math.min(row.length, W)
+            for (let x = 0; x < ww; x++) {
+                const j = idx(x, y)
+                if (j >= 0) strip.setPixelColor(j, row[x] | 0)
+            }
+        }
+        if (autoShow) strip.show()
+    }
+
+    /**
+     * Draw pixel art created with the GUI picker (resizes / crops to current matrix).
+     * Accepts values like: "8x32;#RRGGBB,...|#RRGGBB,..."
+     */
+    //% block="draw pixel art %pixels || show %autoShow"
+    //% pixels.fieldEditor="cjneopaint"
+    //% pixels.fieldOptions.decompileLiterals=true
+    //% autoShow.defl=true
+    //% group="Pixels" weight=45
+    export function drawPixelArt(pixels: string, autoShow: boolean = true) {
+        ensureStrip()
+        const buf = decodePixelArtToBuffer(pixels, W, H) // flattens to length W*H
+        // render
+        const n = Math.min(buf.length, W * H)
+        for (let i = 0; i < n; i++) {
+            const y = Math.idiv(i, W)
+            const x = i - y * W
+            const j = idx(x, y)
+            if (j >= 0) strip.setPixelColor(j, buf[i] | 0)
+        }
+        if (autoShow) strip.show()
+    }
+
+    /** Parse "WxH;row0|row1|..." into a flat RGB buffer sized to target W×H (crop/pad). */
+    function decodePixelArtToBuffer(src: string, targetW: number, targetH: number): number[] {
+        // Expected: "8x32;#RRGGBB,#RRGGBB,...|... (H rows)"
+        if (!src) src = ""
+        let w = targetW, h = targetH
+        let body = src
+        const semi = src.indexOf(";")
+        if (semi > 0) {
+            const head = src.substring(0, semi)
+            body = src.substring(semi + 1)
+            const xIdx = head.indexOf("x")
+            if (xIdx > 0) {
+                const sw = parseInt(head.substring(0, xIdx)) || targetW
+                const sh = parseInt(head.substring(xIdx + 1)) || targetH
+                if (sw > 0 && sh > 0) { w = sw; h = sh }
+            }
+        }
+        const rows = body.split("|")
+        const out: number[] = new Array(targetW * targetH)
+        for (let oy = 0; oy < targetH; oy++) {
+            for (let ox = 0; ox < targetW; ox++) {
+                out[oy * targetW + ox] = 0
+            }
+        }
+        for (let y = 0; y < Math.min(h, targetH); y++) {
+            const row = (rows[y] || "").split(",")
+            for (let x = 0; x < Math.min(w, targetW); x++) {
+                const token = (row[x] || "").trim()
+                // token may be "#RRGGBB" or "0" (off)
+                let col = 0
+                if (token && token.charAt(0) === "#" && (token.length === 7)) {
+                    const r = parseInt(token.substr(1, 2), 16) || 0
+                    const g = parseInt(token.substr(3, 2), 16) || 0
+                    const b = parseInt(token.substr(5, 2), 16) || 0
+                    col = neopixel.rgb(r, g, b)
+                }
+                out[y * targetW + x] = col
+            }
+        }
+        return out
+    }
+
+
 
 } // namespace
