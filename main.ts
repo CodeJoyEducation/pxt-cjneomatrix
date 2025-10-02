@@ -518,6 +518,7 @@ namespace cjneomatrix {
 
     // ---------- 5×8 font (columns; bit0=top .. bit7=bottom) ----------
     const FONT: { [key: string]: number[] } = (function () {
+        ensureStrip()
         const m: { [k: string]: number[] } = {}
         const d = (c: string, a: number[]) => m[c] = a
 

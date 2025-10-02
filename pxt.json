@@ -1,6 +1,6 @@
 {
   "name": "pxt-cjneomatrix",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Easy horizontal text (static/scrolling) with gradients and effects on an 8x8, 8x16 or 8×32 NeoPixel matrix for micro:bit.",
   "license": "MIT",
   "dependencies": {
