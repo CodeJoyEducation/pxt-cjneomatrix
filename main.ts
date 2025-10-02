@@ -461,6 +461,7 @@ namespace cjneomatrix {
 
     // ---------- Internal scroll cores ----------
     function scrollSolid(text: string, colors: number[], fallbackColor: number, msPerCol: number) {
+        ensureStrip()
         const cols = buildCols(text)
         if (cols.length === 0) return
         effectsRunning = true
@@ -488,6 +489,7 @@ namespace cjneomatrix {
     }
 
     function scrollGradient(text: string, c1: number, c2: number, mode: GradientMode, msPerCol: number) {
+        ensureStrip()
         const cols = buildCols(text)
         if (cols.length === 0) return
         effectsRunning = true
